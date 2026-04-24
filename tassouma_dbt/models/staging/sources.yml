@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: raw_tassouma
+    schema: bronze
+    tables:
+      - name: core_vente
+      - name: core_lignevente
+      - name: core_produit
+      - name: core_boutique

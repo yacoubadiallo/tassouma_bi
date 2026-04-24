@@ -1,0 +1,142 @@
+version: '3.8'
+
+networks:
+  tassouma_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  postgres_data:
+  minio_data:
+  metabase_data:
+  airflow_db_data:
+
+services:
+  # --- SOURCE : Base de production Tassouma (MySQL) ---
+  db_prod:
+    image: mysql:9.3.0
+    container_name: tassouma_mysql_prod
+    restart: always
+    environment:
+      MYSQL_DATABASE: projetbi
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./projetbi.sql:/docker-entrypoint-initdb.d/setup.sql
+    networks:
+      - tassouma_network
+
+  # --- STORAGE : Data Lake (MinIO) ---
+  minio:
+    image: minio/minio
+    container_name: tassouma_minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin_password
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - tassouma_network
+
+  # --- WAREHOUSE : PostgreSQL (OLAP) ---
+  db_warehouse:
+    image: postgres:16-alpine
+    container_name: tassouma_postgres_dw
+    restart: always
+    environment:
+      POSTGRES_DB: warehouse
+      POSTGRES_USER: bi_user
+      POSTGRES_PASSWORD: bi_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tassouma_network
+
+  # --- ORCHESTRATION : Airflow Database ---
+  db_airflow:
+    image: postgres:16-alpine
+    container_name: tassouma_airflow_db
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow_password
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    networks:
+      - tassouma_network
+
+  # --- ORCHESTRATION : Airflow Webserver ---
+  airflow_webserver:
+    image: apache/airflow:2.7.1-python3.11
+    container_name: tassouma_airflow_web
+    restart: always
+    user: "50000:0"
+    depends_on:
+      - db_airflow
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@db_airflow/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "tassouma_key_2026"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - .:/usr/app
+    command: >
+      bash -c "pip install pandas pymysql boto3 cryptography sqlalchemy polars pyarrow dbt-core dbt-postgres &&
+      airflow db init &&
+      airflow users create --username airflow --firstname Yacouba --lastname Diallo --role Admin --email admin@tassouma.com --password airflow &&
+      airflow webserver"
+    networks:
+      - tassouma_network
+
+  # --- ORCHESTRATION : Airflow Scheduler ---
+  airflow_scheduler:
+    image: apache/airflow:2.7.1-python3.11
+    container_name: tassouma_airflow_scheduler
+    restart: always
+    user: "50000:0"
+    depends_on:
+      - db_airflow
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@db_airflow/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__WEBSERVER__SECRET_KEY: "tassouma_key_2026"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - .:/usr/app
+    command: >
+      bash -c "pip install pandas pymysql boto3 cryptography sqlalchemy polars pyarrow dbt-core dbt-postgres &&
+      airflow scheduler"
+    networks:
+      - tassouma_network
+
+  # --- VISUALISATION : Metabase ---
+  metabase:
+    image: metabase/metabase:latest
+    container_name: tassouma_metabase
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: warehouse
+      MB_DB_PORT: 5432
+      MB_DB_USER: bi_user
+      MB_DB_PASS: bi_password
+      MB_DB_HOST: db_warehouse
+    networks:
+      - tassouma_network
+    depends_on:
+      - db_warehouse
