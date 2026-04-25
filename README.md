@@ -1,63 +1,83 @@
-Tassouma Sales Analytics | Modern Data Stack (ELT)
+# 🚀 Tassouma Sales Analytics | Modern Data Stack (ELT)
+
+**Yacouba DIALLO — INGÉNIEUR BIG DATA**
 
 Pipeline de données haute performance conçu pour centraliser et analyser les flux de ventes multi-boutiques (Région AES). Cette solution automatise l'ingestion, le stockage en Data Lake, la modélisation en Warehouse et la restitution BI.
 
-## Architecture & Stack Technique
-
-L'infrastructure repose sur une architecture **cloud-native** entièrement conteneurisée :
-
-- **Orchestration** : Apache Airflow (DAGs modulaires, monitoring des workflows).
-- **Extraction (EL)** : Connecteurs Python personnalisés pour MySQL.
-- **Data Lake** : MinIO (S3-Compatible) pour le stockage des objets bruts.
-- **Data Warehouse** : PostgreSQL optimisé pour le requêtage analytique.
-- **Transformation (T)** : **dbt** pour le versioning SQL, la modélisation en couches (Bronze/Silver/Gold) et les tests de qualité.
-- **Analytics** : Metabase pour le dashboarding interactif et le pilotage des KPIs.
-
 ---
 
-## Business Insights (Dashboard)
+## Architecture du Pipeline
 
-Le système fournit une visibilité temps réel sur les indicateurs clés de performance (KPIs) :
-- **Revenue Monitoring** : Évolution mensuelle et annuelle du chiffre d'affaires.
-- **Performance Géographique** : Analyse comparative par point de vente (Bamako, Niamey, Ouagadougou, etc.).
-- **Product Analytics** : Top 15 des produits par contribution à la marge.
+L'infrastructure repose sur une architecture **cloud-native** entièrement conteneurisée, orchestrée par Airflow.
 
-![Dashboard Overview](./stack/metabase/Capture%20d’écran%202026-04-24%20102305.png)
+```mermaid
+graph LR
+    subgraph "Sources (On-premise)"
+        DB[(MySQL)]
+    end
 
----
+    subgraph "Orchestration"
+        AF[Apache Airflow]
+    end
 
-## Quick Start (Déploiement)
+    subgraph "Data Lake (S3)"
+        MI[MinIO Storage]
+    end
 
-Le projet est entièrement piloté par Docker pour garantir la parité entre les environnements de développement et de production.
+    subgraph "Data Warehouse"
+        PG[(PostgreSQL)]
+    end
 
-1. **Cloner le repository** :
-   ```bash
-   git clone [https://github.com/yacoubadiallo/tassouma_bi.git](https://github.com/yacoubadiallo/tassouma_bi.git)
-   cd tassouma_bi
+    subgraph "Transformation & Viz"
+        DBT[dbt Models]
+        MB[Metabase Dashboards]
+    end
+
+    DB -->|Extraction| MI
+    AF -.->|Orchestre| DB
+    MI -->|Processing Spark| PG
+    PG -->|Modélisation| DBT
+    DBT --> PG
+    PG --> MB
+
+```
+Aperçu de la Solution
+Orchestration & Monitoring (Apache Airflow)
+Visualisation du DAG de production assurant la synchronisation entre MySQL, MinIO et le Warehouse PostgreSQL.
+
+Business Intelligence (Metabase)
+Dashboards interactifs permettant le pilotage des KPIs ventes, produits et performances par boutique.
+
+Stack Technique & Expertise
+Ingestion & Infras : Docker, Airflow, MinIO (S3-API).
+
+Processing : Python, Apache Spark (Lake-to-Warehouse).
+
+Data Modeling : dbt (Versioning SQL, tests de schémas, couches Bronze/Silver/Gold).
+
+Storage : PostgreSQL & MySQL.
+
+BI : Metabase (SQL interactif).
+
+Quick Start (Déploiement)
+Cloner le repository :
+
+Bash
+git clone [https://github.com/yacoubadiallo/tassouma_bi.git](https://github.com/yacoubadiallo/tassouma_bi.git)
+cd tassouma_bi
 Lancer les services :
 
 Bash
 docker-compose up -d
-Endpoints & Monitoring :
-| Service | URL | Role |
-| :--- | :--- | :--- |
-| Airflow | http://localhost:8080 | Orchestration & Logs |
-| Metabase | http://localhost:3000 | Data Visualization |
-| MinIO | http://localhost:9001 | Data Lake Storage |
-
-Caractéristiques Techniques
-Modélisation dbt : Utilisation de modèles incrémentaux et de tests de contraintes (non-null, unique) pour garantir l'intégrité du Warehouse.
-
-Scalabilité : Architecture prête pour le passage à Spark pour le traitement de volumes massifs (Big Data).
-
-Isolation : Utilisation de réseaux Docker dédiés pour la communication inter-services.
 
 Structure du Projet
-/dags : Workflows automatisés (Scheduling & Ingestion).
+/dags : Workflows automatisés et scheduling.
 
 /tassouma_dbt : Logique de transformation business (SQL versionné).
 
-ingestion_tassouma.py : Script d'extraction optimisé.
+/img : Captures d'écran et schémas techniques.
 
-lake_to_warehouse.py : Script de chargement structuré.
+ingestion_tassouma.py : Script d'extraction optimisé MySQL -> MinIO.
+
+lake_to_warehouse.py : Script de chargement structuré vers PostgreSQL.
 
