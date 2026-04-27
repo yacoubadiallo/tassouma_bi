@@ -55,7 +55,7 @@ Dashboards interactifs permettant le pilotage en temps réel des KPIs ventes, pr
 ## Stack Technique & Expertise
 
 * **Ingestion & Infra** : Docker, Apache Airflow, MinIO (compatible S3 API).
-* **Processing** : Python, Apache Spark (Lake-to-Warehouse).
+* **Processing** :Python (Scripts ETL optimisés pour l'extraction et le chargement)
 * **Data Modeling** : **dbt (data build tool)** — Utilisation de modèles incrémentaux et de tests de contraintes (*non-null*, *unique*) pour garantir l'intégrité du Warehouse (couches Bronze/Silver/Gold).
 * **Storage** : PostgreSQL & MySQL.
 * **BI & Dataviz** : Metabase (SQL interactif).
