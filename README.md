@@ -40,13 +40,15 @@ Aperçu de la Solution
 Business Intelligence 
 (Metabase) Dashboards interactifs permettant le pilotage des KPIs ventes, produits et performances par boutique.
 
-Vue d'ensemble (CA & Produits)Analyse Détaillée
 
 Stack Technique & Expertise
 
 Ingestion & Infras : Docker, Airflow, MinIO (S3-API).
+
 Processing : Python, Apache Spark (Lake-to-Warehouse).
+
 Data Modeling : dbt (Versioning SQL, tests de schémas, couches Bronze/Silver/Gold).
+
 Storage : PostgreSQL & MySQL.BI : Metabase (SQL interactif).
 
 Quick Start (Déploiement)
@@ -58,8 +60,8 @@ git clone [https://github.com/yacoubadiallo/tassouma_bi.git](https://github.com/
 
 cd tassouma_bi
 
-Lancer les services :Bashdocker-compose up -d
+Lancer les services :Bash
+docker-compose up -d
 
-Points d'accès :ServiceURLRôleAirflowhttp://localhost:8080OrchestrationMetabasehttp://localhost:3000Data VizMinIOhttp://localhost:9001Data Lake
 
 Contact : Yacouba Diallo | Ingénieur Big Data
